@@ -49,23 +49,28 @@ const Preloader = /** @constructor */ function () { // eslint-disable-line no-un
 	}
 
 	function loadFetch(file, tracker, fileSize, raw) {
-        var p_file = file
-        tracker[file] = {
-            total: fileSize || 0,
-            loaded: 0,
-            done: false,
-        };
-        if (file.endsWith(".wasm") || file.endsWith(".pck")) {
-            file += ".gz"
-        }
-        return fetch(file).then(function (response) {
-            if (!response.ok) {
-                return Promise.reject(new Error("Failed loading file "));
-            }
-            const tr = getTrackedResponse(response, tracker[p_file]);
-            return Promise.resolve(tr.arrayBuffer().then( buffer => {
-                return new Response(pako.inflate(buffer), { headers: tr.headers }) 
-            }))
+		var p_file = file
+	
+		tracker[file] = {
+			total: fileSize || 0,
+			loaded: 0,
+			done: false,
+		};
+	
+		if (file.endsWith(".wasm") || file.endsWith(".pck")) {
+			file += ".gz"
+		}
+	
+		return fetch(file).then(function (response) {
+			if (!response.ok) {
+				return Promise.reject(new Error(`Failed loading file '${file}'`));
+			}
+	
+			const tr = getTrackedResponse(response, tracker[p_file]);
+			return Promise.resolve(tr.arrayBuffer().then( buffer => {
+				return new Response(pako.inflate(buffer), { headers: tr.headers }) 
+			}))
+			
 		});
 	}
 
@@ -135,14 +140,12 @@ const Preloader = /** @constructor */ function () { // eslint-disable-line no-un
 		if (typeof pathOrBuffer === 'string') {
 			const me = this;
 			return this.loadPromise(pathOrBuffer, fileSize).then(function (buf) {
-
-            buf.arrayBuffer().then(data => {
-				me.preloadedFiles.push({
-					path: destPath || pathOrBuffer,
-					buffer: data,
-				});
-			});
-            Promise.resolve();
+				buf.arrayBuffer().then(data => {
+					me.preloadedFiles.push({
+						path: destPath || pathOrBuffer,
+						buffer: data,
+					});
+				})
 				return Promise.resolve();
 			});
 		} else if (pathOrBuffer instanceof ArrayBuffer) {
